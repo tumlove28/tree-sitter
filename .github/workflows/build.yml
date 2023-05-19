@@ -136,6 +136,12 @@ jobs:
     - name: Build CLI
       run: $BUILD_CMD build --release --target=${{ matrix.job.target }}
 
+    - name: CLI info
+      if: ${{ startsWith(matrix.job.name, 'linux') }}
+      run: |
+        min_glibc=$(objdump -Cp target/$TARGET/release/tree-sitter | sed -nr 's/.*(GLIBC_.+).*/\1/p' | sort -uV | tail -n1)
+        echo "🔗 Minimal **glibc** version required for CLI: ${min_glibc}">> $GITHUB_STEP_SUMMARY
+
     - name: Fetch fixtures
       if: ${{ inputs.run-tests }}
       run: script/fetch-fixtures
