@@ -121,7 +121,7 @@ jobs:
         esac
 
     - name: Build C library
-      if: "!contains(matrix.job.os, 'windows')" # Requires an additional adapted Makefile for `cl.exe` compiler
+      if: ${{ !contains(matrix.job.os, 'windows') }} # Requires an additional adapted Makefile for `cl.exe` compiler
       run: make.sh CFLAGS="-Werror" -j
 
     - name: Build wasm library
@@ -137,18 +137,18 @@ jobs:
       run: script/generate-fixtures
 
     - name: Generate WASM fixtures
-      if: "!matrix.job.use-cross"
+      if: ${{ inputs.run-tests && !matrix.job.use-cross }}
       run: script/generate-fixtures-wasm
 
     - name: Run main tests
       run: $BUILD_CMD test --target=${{ matrix.job.target }}
 
     - name: Run wasm tests
-      if: "!matrix.job.use-cross" # TODO: Install Emscripten into custom cross images
+      if: ${{ inputs.run-tests && !matrix.job.use-cross }} # TODO: Install Emscripten into custom cross images
       run: script/test-wasm
 
     - name: Run benchmarks
-      if: "!matrix.job.use-cross" # It doesn't make sense to benchmark something in an emulator
+      if: ${{ inputs.run-tests && !matrix.job.use-cross }} # It doesn't make sense to benchmark something in an emulator
       run: $BUILD_CMD bench benchmark -p tree-sitter-cli --target=${{ matrix.job.target }}
 
     - name: Upload CLI artifact
