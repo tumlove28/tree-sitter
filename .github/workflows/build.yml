@@ -11,6 +11,12 @@ on:
       ref:
         default: ${{ github.ref }}
         type: string
+  workflow_dispatch:
+    inputs:
+      run-tests:
+        description: Run tests
+        default: true
+        type: boolean
 
 jobs:
   build:
@@ -131,9 +137,11 @@ jobs:
       run: $BUILD_CMD build --release --target=${{ matrix.job.target }}
 
     - name: Fetch fixtures
+      if: ${{ inputs.run-tests }}
       run: script/fetch-fixtures
 
     - name: Generate fixtures
+      if: ${{ inputs.run-tests }}
       run: script/generate-fixtures
 
     - name: Generate WASM fixtures
@@ -141,6 +149,7 @@ jobs:
       run: script/generate-fixtures-wasm
 
     - name: Run main tests
+      if: ${{ inputs.run-tests }}
       run: $BUILD_CMD test --target=${{ matrix.job.target }}
 
     - name: Run wasm tests
