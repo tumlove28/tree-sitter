@@ -7,7 +7,9 @@ extern "C" {
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define ts_builtin_sym_error ((TSSymbol)-1)
 #define ts_builtin_sym_end 0
@@ -226,5 +228,148 @@ struct TSLanguage {
 #ifdef __cplusplus
 }
 #endif
+
+/*
+ * External scanner helpers
+ */
+
+#define SMALL_LEN 12
+
+// A unicode string, encoded as UTF-8, and optimized for short lengths.
+// Because this is designed for use in external scanners, the only
+// mutation supported is appending characters.
+typedef struct {
+  union {
+    struct {
+      char *data;
+      uint32_t capacity;
+    } large;
+    char small[SMALL_LEN];
+  } content;
+  uint32_t length;
+} TSString;
+
+static inline TSString ts_string_new() {
+  TSString self;
+  memset(&self, 0, sizeof(self));
+  return self;
+}
+
+static inline TSString ts_string_from(const char *content, uint32_t length) {
+  TSString self;
+  self.length = length;
+  if (length > SMALL_LEN) {
+    self.content.large.data = malloc(length);
+    self.content.large.capacity = length;
+    memcpy(self.content.large.data, content, length);
+  } else {
+    memcpy(self.content.small, content, length);
+  }
+  return self;
+}
+
+static inline void ts_string_delete(TSString *self) {
+  if (self->length > SMALL_LEN) free(self->content.large.data);
+  memset(self, 0, sizeof(*self));
+}
+
+static inline char *ts_string_data(TSString *self) {
+  if (self->length > SMALL_LEN) {
+    return self->content.large.data;
+  } else {
+    return self->content.small;
+  }
+}
+
+static inline bool ts_string_eq(const TSString *self, const TSString *other) {
+  if (self->length != other->length) return false;
+  if (self->length > SMALL_LEN) {
+    return memcmp(self->content.large.data, other->content.large.data, self->length) == 0;
+  } else {
+    return memcmp(self->content.small, other->content.small, self->length) == 0;
+  }
+}
+
+static inline void ts_string_push(TSString *self, int32_t c) {
+  unsigned utf8_len = 0;
+  if (c <= 0x7f) {
+    utf8_len = 1;
+  } else  if (c <= 0x7ff) {
+    utf8_len = 2;
+  } else  if (c <= 0xffff) {
+    utf8_len = 3;
+  } else {
+    utf8_len = 4;
+  }
+
+  uint32_t old_capacity = self->length > SMALL_LEN
+    ? self->content.large.capacity
+    : SMALL_LEN;
+  char *old_data = ts_string_data(self);
+
+  char *data = old_data;
+  if (self->length + utf8_len > old_capacity) {
+    uint32_t capacity = old_capacity * 2;
+    if (old_capacity > SMALL_LEN) {
+      data = realloc(data, capacity);
+      assert(data != NULL);
+    } else {
+      data = malloc(capacity);
+      assert(data != NULL);
+      memcpy(data, old_data, self->length);
+    }
+    self->content.large.data = data;
+    self->content.large.capacity = capacity;
+  }
+
+  if (c <= 0x7f) {
+      data[self->length++] = (char)c;
+  } else {
+      if (c <= 0x7ff) {
+        data[self->length++] = (char)((c >> 6) | 0xc0);
+      } else {
+          if (c <= 0xffff) {
+            data[self->length++] = (char)((c >> 12) | 0xe0);
+          } else {
+              data[self->length++] = (char)((c >> 18) | 0xf0);
+              data[self->length++] = (char)(((c >> 12) & 0x3f) | 0x80);
+          }
+          data[self->length++] = (char)(((c >> 6) & 0x3f) | 0x80);
+      }
+      data[self->length++] = (char)((c & 0x3f) | 0x80);
+  }
+}
+
+static inline int32_t ts_string_char(TSString *self, uint32_t *i) {
+  char *data = ts_string_data(self);
+  uint32_t ix = *i;
+
+  if (ix >= self->length) return -1;
+
+  int32_t c = data[ix];
+  ix += 1;
+  if ((c & 0x80) != 0) {
+    if (c < 0xe0) {
+      c = ((c & 0x1f) << 6) | (data[ix] & 0x3f);
+      ix += 1;
+    } else if (c < 0xf0) {
+      c = (uint16_t)((c << 12) | ((data[ix] & 0x3f) << 6) | (data[ix + 1] & 0x3f));
+      ix += 2;
+    } else {
+      c = (
+        ((c & 7) << 18) |
+        ((data[ix] & 0x3f) << 12) |
+        ((data[ix + 1] & 0x3f) << 6) |
+        (data[ix + 2] & 0x3f)
+      );
+      ix += 3;
+    }
+  }
+
+  *i = ix;
+  return c;
+}
+
+#undef SMALL_LEN
 
 #endif  // TREE_SITTER_PARSER_H_
