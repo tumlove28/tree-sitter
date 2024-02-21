@@ -1,0 +1,64 @@
+name: Hotfix
+
+on:
+  workflow_dispatch:
+
+jobs:
+  lib:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+
+      - name: Publish `tree-sitter` (dry run)
+        run: cargo publish --dry-run -p tree-sitter
+
+      - name: Publish `tree-sitter`
+        run: cargo publish -p tree-sitter
+
+      - name: Publish `tree-sitter-loader` (dry run)
+        run: cargo publish --dry-run -p tree-sitter-loader
+
+      - name: Publish `tree-sitter-loader`
+        run: cargo publish -p tree-sitter-loader
+
+      - name: Publish `tree-sitter-config` (dry run)
+        run: cargo publish --dry-run -p tree-sitter-config
+
+      - name: Publish `tree-sitter-config`
+        run: cargo publish -p tree-sitter-config
+
+      - name: Publish `tree-sitter-highlight` (dry run)
+        run: cargo publish --dry-run -p tree-sitter-highlight
+
+      - name: Publish `tree-sitter-highlight`
+        run: cargo publish -p tree-sitter-highlight
+
+      - name: Publish `tree-sitter-tags` (dry run)
+        run: cargo publish --dry-run -p tree-sitter-tags
+
+      - name: Publish `tree-sitter-tags`
+        run: cargo publish -p tree-sitter-tags
+
+      - name: Publish `tree-sitter-cli` (dry run)
+        run: cargo publish --dry-run -p tree-sitter-cli
+
+      - name: Publish `tree-sitter-cli`
+        run: cargo publish -p tree-sitter-cli
+
+      - name: Re-build wasm file for `web-tree-sitter`
+        run: ./script/build-wasm
+
+      - name: Publish `web-tree-sitter`
+        run: |
+          cd lib/binding_web
+          npm publish --dry-run web-tree-sitter
+          npm publish web-tree-sitter
+
