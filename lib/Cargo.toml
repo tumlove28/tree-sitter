@@ -2,6 +2,7 @@
 name = "tree-sitter"
 version.workspace = true
 description = "Rust bindings to the Tree-sitter parsing library"
+publish = false
 authors.workspace = true
 edition.workspace = true
 rust-version.workspace = true
