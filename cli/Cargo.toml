@@ -41,7 +41,6 @@ indoc.workspace = true
 lazy_static.workspace = true
 log.workspace = true
 memchr.workspace = true
-path-slash.workspace = true
 regex.workspace = true
 regex-syntax.workspace = true
 rustc-hash.workspace = true
@@ -54,7 +53,6 @@ tiny_http.workspace = true
 walkdir.workspace = true
 wasmparser.workspace = true
 webbrowser.workspace = true
-which.workspace = true
 
 tree-sitter.workspace = true
 tree-sitter-config.workspace = true
@@ -70,6 +68,3 @@ tempfile.workspace = true
 pretty_assertions.workspace = true
 ctor.workspace = true
 unindent.workspace = true
-
-[build-dependencies]
-toml.workspace = true

@@ -20,20 +20,19 @@ let package = Package(
                     "bindings/node",
                     "bindings/python",
                     "bindings/rust",
-                    "examples",
+                    "prebuilds",
                     "grammar.js",
                     "package.json",
                     "package-lock.json",
                     "pyproject.toml",
                     "setup.py",
                     "test",
-                    "types",
+                    "examples",
                     ".editorconfig",
                     ".github",
                     ".gitignore",
                     ".gitattributes",
                     ".gitmodules",
-                    ".npmignore",
                 ],
                 sources: [
                     "src/parser.c",
@@ -44,5 +43,6 @@ let package = Package(
                 ],
                 publicHeadersPath: "bindings/swift",
                 cSettings: [.headerSearchPath("src")])
-    ]
+    ],
+    cLanguageStandard: .c11
 )
