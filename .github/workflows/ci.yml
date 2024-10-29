@@ -33,5 +33,8 @@ jobs:
   sanitize:
     uses: ./.github/workflows/sanitize.yml
 
+  bindgen:
+    uses: ./.github/workflows/bindgen.yml
+
   build:
     uses: ./.github/workflows/build.yml
