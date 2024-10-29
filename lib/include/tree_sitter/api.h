@@ -47,6 +47,9 @@ typedef struct TSTree TSTree;
 typedef struct TSQuery TSQuery;
 typedef struct TSQueryCursor TSQueryCursor;
 typedef struct TSLookaheadIterator TSLookaheadIterator;
+typedef enum TSSomethingFoo {
+  TSSomethingFooOne,
+} TSSomethingFoo;
 
 typedef enum TSInputEncoding {
   TSInputEncodingUTF8,
