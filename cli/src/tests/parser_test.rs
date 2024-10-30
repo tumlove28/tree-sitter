@@ -713,7 +713,7 @@ fn test_parsing_on_multiple_threads() {
 fn test_parsing_cancelled_by_another_thread() {
     let cancellation_flag = std::sync::Arc::new(AtomicUsize::new(0));
     let flag = cancellation_flag.clone();
-    let callback = |_: &ParseState| cancellation_flag.load(Ordering::SeqCst) != 0;
+    let callback = &mut |_: &ParseState| cancellation_flag.load(Ordering::SeqCst) != 0;
 
     let mut parser = Parser::new();
     parser.set_language(&get_language("javascript")).unwrap();
@@ -778,7 +778,10 @@ fn test_parsing_with_a_timeout() {
             }
         },
         None,
-        Some(ParseOptions::new().interrupt_callback(|_| start_time.elapsed().as_micros() > 1000)),
+        Some(
+            ParseOptions::new()
+                .interrupt_callback(&mut |_| start_time.elapsed().as_micros() > 1000),
+        ),
     );
     assert!(tree.is_none());
     assert!(start_time.elapsed().as_micros() < 2000);
@@ -794,7 +797,10 @@ fn test_parsing_with_a_timeout() {
             }
         },
         None,
-        Some(ParseOptions::new().interrupt_callback(|_| start_time.elapsed().as_micros() > 5000)),
+        Some(
+            ParseOptions::new()
+                .interrupt_callback(&mut |_| start_time.elapsed().as_micros() > 5000),
+        ),
     );
     assert!(tree.is_none());
     assert!(start_time.elapsed().as_micros() > 100);
@@ -832,7 +838,7 @@ fn test_parsing_with_a_timeout_and_a_reset() {
             }
         },
         None,
-        Some(ParseOptions::new().interrupt_callback(|_| start_time.elapsed().as_micros() > 5)),
+        Some(ParseOptions::new().interrupt_callback(&mut |_| start_time.elapsed().as_micros() > 5)),
     );
     assert!(tree.is_none());
 
@@ -863,7 +869,7 @@ fn test_parsing_with_a_timeout_and_a_reset() {
             }
         },
         None,
-        Some(ParseOptions::new().interrupt_callback(|_| start_time.elapsed().as_micros() > 5)),
+        Some(ParseOptions::new().interrupt_callback(&mut |_| start_time.elapsed().as_micros() > 5)),
     );
     assert!(tree.is_none());
 
@@ -903,7 +909,10 @@ fn test_parsing_with_a_timeout_and_implicit_reset() {
                 }
             },
             None,
-            Some(ParseOptions::new().interrupt_callback(|_| start_time.elapsed().as_micros() > 5)),
+            Some(
+                ParseOptions::new()
+                    .interrupt_callback(&mut |_| start_time.elapsed().as_micros() > 5),
+            ),
         );
         assert!(tree.is_none());
 
@@ -944,7 +953,10 @@ fn test_parsing_with_timeout_and_no_completion() {
                 }
             },
             None,
-            Some(ParseOptions::new().interrupt_callback(|_| start_time.elapsed().as_micros() > 5)),
+            Some(
+                ParseOptions::new()
+                    .interrupt_callback(&mut |_| start_time.elapsed().as_micros() > 5),
+            ),
         );
         assert!(tree.is_none());
 

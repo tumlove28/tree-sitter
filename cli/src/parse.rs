@@ -252,7 +252,7 @@ pub fn parse_file_at_path(parser: &mut Parser, opts: &ParseFileOptions) -> Resul
     // Additionally, if the `--time` flag was passed, end the parse
     // after the specified number of microseconds.
     let start_time = Instant::now();
-    let interrupt_callback = |_: &ParseState| {
+    let interrupt_callback = &mut |_: &ParseState| {
         if let Some(cancellation_flag) = opts.cancellation_flag {
             if cancellation_flag.load(Ordering::SeqCst) != 0 {
                 return true;

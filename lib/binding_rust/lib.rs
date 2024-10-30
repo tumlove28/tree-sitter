@@ -136,8 +136,11 @@ impl<'a> ParseOptions<'a> {
     }
 
     #[must_use]
-    pub fn interrupt_callback<F: FnMut(&ParseState) -> bool + 'a>(mut self, callback: F) -> Self {
-        self.interrupt_callback = Some(Box::new(callback));
+    pub fn interrupt_callback<F: FnMut(&ParseState) -> bool>(
+        mut self,
+        callback: &'a mut F,
+    ) -> Self {
+        self.interrupt_callback = Some(callback);
         self
     }
 }
@@ -154,11 +157,11 @@ impl<'a> QueryCursorOptions<'a> {
     }
 
     #[must_use]
-    pub fn interrupt_callback<F: FnMut(&QueryCursorState) -> bool + 'a>(
+    pub fn interrupt_callback<F: FnMut(&QueryCursorState) -> bool>(
         mut self,
-        callback: F,
+        callback: &'a mut F,
     ) -> Self {
-        self.interrupt_callback = Some(Box::new(callback));
+        self.interrupt_callback = Some(callback);
         self
     }
 }
@@ -191,10 +194,10 @@ type FieldId = NonZeroU16;
 type Logger<'a> = Box<dyn FnMut(LogType, &str) + 'a>;
 
 /// A callback that receives the parse state during parsing.
-type ParseInterruptCallback<'a> = Box<dyn FnMut(&ParseState) -> bool + 'a>;
+type ParseInterruptCallback<'a> = &'a mut dyn FnMut(&ParseState) -> bool;
 
 /// A callback that receives the query state during query execution.
-type QueryInterruptCallback<'a> = Box<dyn FnMut(&QueryCursorState) -> bool + 'a>;
+type QueryInterruptCallback<'a> = &'a mut dyn FnMut(&QueryCursorState) -> bool;
 
 /// A stateful object for walking a syntax [`Tree`] efficiently.
 #[doc(alias = "TSTreeCursor")]

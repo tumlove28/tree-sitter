@@ -296,7 +296,7 @@ impl TagsContext {
                     }
                 },
                 None,
-                Some(ParseOptions::new().interrupt_callback(|_| {
+                Some(ParseOptions::new().interrupt_callback(&mut |_| {
                     if let Some(cancellation_flag) = cancellation_flag {
                         cancellation_flag.load(Ordering::SeqCst) != 0
                     } else {
