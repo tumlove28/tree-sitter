@@ -798,9 +798,9 @@ impl Parser {
         };
 
         let parse_options = if let Some(options) = options {
-            if let Some(cb) = options.progress_callback {
+            if let Some(mut cb) = options.progress_callback {
                 ffi::TSParseOptions {
-                    payload: Box::into_raw(Box::new(cb)).cast::<c_void>(),
+                    payload: core::ptr::addr_of_mut!(cb).cast::<c_void>(),
                     progress_callback: Some(progress),
                 }
             } else {
@@ -831,11 +831,6 @@ impl Parser {
                 c_input,
                 parse_options,
             );
-
-            // Clean up the progress callback if it was set
-            if !parse_options.payload.is_null() {
-                let _ = Box::from_raw(parse_options.payload.cast::<ParseProgressCallback>());
-            }
 
             NonNull::new(c_new_tree).map(Tree)
         }
@@ -938,9 +933,9 @@ impl Parser {
         };
 
         let parse_options = if let Some(options) = options {
-            if let Some(cb) = options.progress_callback {
+            if let Some(mut cb) = options.progress_callback {
                 ffi::TSParseOptions {
-                    payload: Box::into_raw(Box::new(cb)).cast::<c_void>(),
+                    payload: core::ptr::addr_of_mut!(cb).cast::<c_void>(),
                     progress_callback: Some(progress),
                 }
             } else {
@@ -971,11 +966,6 @@ impl Parser {
                 c_input,
                 parse_options,
             );
-
-            // Clean up the progress callback if it was set
-            if !parse_options.payload.is_null() {
-                let _ = Box::from_raw(parse_options.payload.cast::<ParseProgressCallback>());
-            }
 
             NonNull::new(c_new_tree).map(Tree)
         }
@@ -1057,9 +1047,9 @@ impl Parser {
         };
 
         let parse_options = if let Some(options) = options {
-            if let Some(cb) = options.progress_callback {
+            if let Some(mut cb) = options.progress_callback {
                 ffi::TSParseOptions {
-                    payload: Box::into_raw(Box::new(cb)).cast::<c_void>(),
+                    payload: core::ptr::addr_of_mut!(cb).cast::<c_void>(),
                     progress_callback: Some(progress),
                 }
             } else {
@@ -1090,11 +1080,6 @@ impl Parser {
                 c_input,
                 parse_options,
             );
-
-            // Clean up the progress callback if it was set
-            if !parse_options.payload.is_null() {
-                let _ = Box::from_raw(parse_options.payload.cast::<ParseProgressCallback>());
-            }
 
             NonNull::new(c_new_tree).map(Tree)
         }
