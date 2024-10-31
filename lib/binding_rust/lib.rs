@@ -120,9 +120,23 @@ struct LookaheadNamesIterator<'a>(&'a mut LookaheadIterator);
 /// to pass in the current state of the parser.
 pub struct ParseState(NonNull<ffi::TSParseState>);
 
+impl ParseState {
+    #[must_use]
+    pub fn current_byte_offset(&self) -> usize {
+        unsafe { self.0.as_ref() }.current_byte_offset as usize
+    }
+}
+
 /// A stateful object that is passed into a [`QueryInterruptCallback`]
 /// to pass in the current state of the query execution.
 pub struct QueryCursorState(NonNull<ffi::TSQueryCursorState>);
+
+impl QueryCursorState {
+    #[must_use]
+    pub fn current_byte_offset(&self) -> usize {
+        unsafe { self.0.as_ref() }.current_byte_offset as usize
+    }
+}
 
 #[derive(Default)]
 pub struct ParseOptions<'a> {

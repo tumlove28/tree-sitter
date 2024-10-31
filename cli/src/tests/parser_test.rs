@@ -1619,6 +1619,35 @@ fn test_parsing_get_column_at_eof() {
     parser.parse("a", None).unwrap();
 }
 
+#[test]
+fn test_parsing_by_halting_at_offset() {
+    let mut parser = Parser::new();
+    parser.set_language(&get_language("javascript")).unwrap();
+
+    let source_code = "function foo() { return 1; }".repeat(1000);
+
+    let mut seen_byte_offsets = vec![];
+
+    parser
+        .parse_with_options(
+            &mut |offset, _| {
+                if offset < source_code.len() {
+                    &source_code.as_bytes()[offset..]
+                } else {
+                    &[]
+                }
+            },
+            None,
+            Some(ParseOptions::new().interrupt_callback(&mut |p| {
+                seen_byte_offsets.push(p.current_byte_offset());
+                false
+            })),
+        )
+        .unwrap();
+
+    assert!(seen_byte_offsets.len() > 100);
+}
+
 const fn simple_range(start: usize, end: usize) -> Range {
     Range {
         start_byte: start,

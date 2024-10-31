@@ -81,6 +81,7 @@ typedef struct TSInput {
 
 typedef struct TSParseState {
   void *payload;
+  uint32_t current_byte_offset;
 } TSParseState;
 
 typedef struct TSParseOptions {
@@ -162,6 +163,7 @@ typedef enum TSQueryError {
 
 typedef struct TSQueryCursorState {
   void *payload;
+  uint32_t current_byte_offset;
 } TSQueryCursorState;
 
 typedef struct TSQueryCursorOptions {

@@ -76,6 +76,7 @@ pub struct TSInput {
 #[derive(Debug, Copy, Clone)]
 pub struct TSParseState {
     pub payload: *mut ::core::ffi::c_void,
+    pub current_byte_offset: u32,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -165,6 +166,7 @@ pub type TSQueryError = ::core::ffi::c_uint;
 #[derive(Debug, Copy, Clone)]
 pub struct TSQueryCursorState {
     pub payload: *mut ::core::ffi::c_void,
+    pub current_byte_offset: u32,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
