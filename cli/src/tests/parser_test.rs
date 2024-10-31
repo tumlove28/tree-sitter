@@ -730,7 +730,7 @@ fn test_parsing_cancelled_by_another_thread() {
             }
         },
         None,
-        Some(ParseOptions::new().interrupt_callback(callback)),
+        Some(ParseOptions::new().progress_callback(callback)),
     );
     assert!(tree.is_some());
 
@@ -751,7 +751,7 @@ fn test_parsing_cancelled_by_another_thread() {
             }
         },
         None,
-        Some(ParseOptions::new().interrupt_callback(callback)),
+        Some(ParseOptions::new().progress_callback(callback)),
     );
 
     // Parsing returns None because it was cancelled.
@@ -779,8 +779,7 @@ fn test_parsing_with_a_timeout() {
         },
         None,
         Some(
-            ParseOptions::new()
-                .interrupt_callback(&mut |_| start_time.elapsed().as_micros() > 1000),
+            ParseOptions::new().progress_callback(&mut |_| start_time.elapsed().as_micros() > 1000),
         ),
     );
     assert!(tree.is_none());
@@ -798,8 +797,7 @@ fn test_parsing_with_a_timeout() {
         },
         None,
         Some(
-            ParseOptions::new()
-                .interrupt_callback(&mut |_| start_time.elapsed().as_micros() > 5000),
+            ParseOptions::new().progress_callback(&mut |_| start_time.elapsed().as_micros() > 5000),
         ),
     );
     assert!(tree.is_none());
@@ -838,7 +836,7 @@ fn test_parsing_with_a_timeout_and_a_reset() {
             }
         },
         None,
-        Some(ParseOptions::new().interrupt_callback(&mut |_| start_time.elapsed().as_micros() > 5)),
+        Some(ParseOptions::new().progress_callback(&mut |_| start_time.elapsed().as_micros() > 5)),
     );
     assert!(tree.is_none());
 
@@ -869,7 +867,7 @@ fn test_parsing_with_a_timeout_and_a_reset() {
             }
         },
         None,
-        Some(ParseOptions::new().interrupt_callback(&mut |_| start_time.elapsed().as_micros() > 5)),
+        Some(ParseOptions::new().progress_callback(&mut |_| start_time.elapsed().as_micros() > 5)),
     );
     assert!(tree.is_none());
 
@@ -911,7 +909,7 @@ fn test_parsing_with_a_timeout_and_implicit_reset() {
             None,
             Some(
                 ParseOptions::new()
-                    .interrupt_callback(&mut |_| start_time.elapsed().as_micros() > 5),
+                    .progress_callback(&mut |_| start_time.elapsed().as_micros() > 5),
             ),
         );
         assert!(tree.is_none());
@@ -955,7 +953,7 @@ fn test_parsing_with_timeout_and_no_completion() {
             None,
             Some(
                 ParseOptions::new()
-                    .interrupt_callback(&mut |_| start_time.elapsed().as_micros() > 5),
+                    .progress_callback(&mut |_| start_time.elapsed().as_micros() > 5),
             ),
         );
         assert!(tree.is_none());
@@ -1638,7 +1636,7 @@ fn test_parsing_by_halting_at_offset() {
                 }
             },
             None,
-            Some(ParseOptions::new().interrupt_callback(&mut |p| {
+            Some(ParseOptions::new().progress_callback(&mut |p| {
                 seen_byte_offsets.push(p.current_byte_offset());
                 false
             })),

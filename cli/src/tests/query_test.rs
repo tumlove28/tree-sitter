@@ -5195,7 +5195,7 @@ fn test_query_execution_with_timeout() {
             tree.root_node(),
             source_code.as_bytes(),
             QueryCursorOptions::new()
-                .interrupt_callback(&mut |_| start_time.elapsed().as_micros() > 1000),
+                .progress_callback(&mut |_| start_time.elapsed().as_micros() > 1000),
         )
         .count();
     assert!(matches < 1000);

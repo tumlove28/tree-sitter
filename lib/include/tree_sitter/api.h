@@ -86,7 +86,7 @@ typedef struct TSParseState {
 
 typedef struct TSParseOptions {
   void *payload;
-  bool (*interrupt_callback)(TSParseState *state);
+  bool (*progress_callback)(TSParseState *state);
 } TSParseOptions;
 
 typedef enum TSLogType {
@@ -168,7 +168,7 @@ typedef struct TSQueryCursorState {
 
 typedef struct TSQueryCursorOptions {
   void *payload;
-  bool (*interrupt_callback)(TSQueryCursorState *state);
+  bool (*progress_callback)(TSQueryCursorState *state);
 } TSQueryCursorOptions;
 
 /********************/

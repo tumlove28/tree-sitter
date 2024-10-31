@@ -116,7 +116,7 @@ pub struct Parser(NonNull<ffi::TSParser>);
 pub struct LookaheadIterator(NonNull<ffi::TSLookaheadIterator>);
 struct LookaheadNamesIterator<'a>(&'a mut LookaheadIterator);
 
-/// A stateful object that is passed into a [`ParseInterruptCallback`]
+/// A stateful object that is passed into a [`ParseProgressCallback`]
 /// to pass in the current state of the parser.
 pub struct ParseState(NonNull<ffi::TSParseState>);
 
@@ -127,7 +127,7 @@ impl ParseState {
     }
 }
 
-/// A stateful object that is passed into a [`QueryInterruptCallback`]
+/// A stateful object that is passed into a [`QueryProgressCallback`]
 /// to pass in the current state of the query execution.
 pub struct QueryCursorState(NonNull<ffi::TSQueryCursorState>);
 
@@ -140,7 +140,7 @@ impl QueryCursorState {
 
 #[derive(Default)]
 pub struct ParseOptions<'a> {
-    pub interrupt_callback: Option<ParseInterruptCallback<'a>>,
+    pub progress_callback: Option<ParseProgressCallback<'a>>,
 }
 
 impl<'a> ParseOptions<'a> {
@@ -150,18 +150,15 @@ impl<'a> ParseOptions<'a> {
     }
 
     #[must_use]
-    pub fn interrupt_callback<F: FnMut(&ParseState) -> bool>(
-        mut self,
-        callback: &'a mut F,
-    ) -> Self {
-        self.interrupt_callback = Some(callback);
+    pub fn progress_callback<F: FnMut(&ParseState) -> bool>(mut self, callback: &'a mut F) -> Self {
+        self.progress_callback = Some(callback);
         self
     }
 }
 
 #[derive(Default)]
 pub struct QueryCursorOptions<'a> {
-    pub interrupt_callback: Option<QueryInterruptCallback<'a>>,
+    pub progress_callback: Option<QueryProgressCallback<'a>>,
 }
 
 impl<'a> QueryCursorOptions<'a> {
@@ -171,11 +168,11 @@ impl<'a> QueryCursorOptions<'a> {
     }
 
     #[must_use]
-    pub fn interrupt_callback<F: FnMut(&QueryCursorState) -> bool>(
+    pub fn progress_callback<F: FnMut(&QueryCursorState) -> bool>(
         mut self,
         callback: &'a mut F,
     ) -> Self {
-        self.interrupt_callback = Some(callback);
+        self.progress_callback = Some(callback);
         self
     }
 }
@@ -187,7 +184,7 @@ impl Drop for QueryCursorOptionsDrop {
         unsafe {
             if !(*self.0).payload.is_null() {
                 drop(Box::from_raw(
-                    (*self.0).payload.cast::<QueryInterruptCallback>(),
+                    (*self.0).payload.cast::<QueryProgressCallback>(),
                 ));
             }
             drop(Box::from_raw(self.0));
@@ -208,10 +205,10 @@ type FieldId = NonZeroU16;
 type Logger<'a> = Box<dyn FnMut(LogType, &str) + 'a>;
 
 /// A callback that receives the parse state during parsing.
-type ParseInterruptCallback<'a> = &'a mut dyn FnMut(&ParseState) -> bool;
+type ParseProgressCallback<'a> = &'a mut dyn FnMut(&ParseState) -> bool;
 
 /// A callback that receives the query state during query execution.
-type QueryInterruptCallback<'a> = &'a mut dyn FnMut(&QueryCursorState) -> bool;
+type QueryProgressCallback<'a> = &'a mut dyn FnMut(&QueryCursorState) -> bool;
 
 /// A stateful object for walking a syntax [`Tree`] efficiently.
 #[doc(alias = "TSTreeCursor")]
@@ -762,7 +759,7 @@ impl Parser {
     /// * `old_tree` A previous syntax tree parsed from the same document. If the text of the
     ///   document has changed since `old_tree` was created, then you must edit `old_tree` to match
     ///   the new text using [`Tree::edit`].
-    /// * `options` Options for parsing the text. This can be used to set an interrupt callback.
+    /// * `options` Options for parsing the text. This can be used to set a progress callback.
     pub fn parse_with_options<T: AsRef<[u8]>, F: FnMut(usize, Point) -> T>(
         &mut self,
         callback: &mut F,
@@ -771,11 +768,11 @@ impl Parser {
     ) -> Option<Tree> {
         type Payload<'a, F, T> = (&'a mut F, Option<T>);
 
-        // This C function is passed to Tree-sitter as the interrupt callback.
-        unsafe extern "C" fn interrupt(state: *mut ffi::TSParseState) -> bool {
+        // This C function is passed to Tree-sitter as the progress callback.
+        unsafe extern "C" fn progress(state: *mut ffi::TSParseState) -> bool {
             let callback = (*state)
                 .payload
-                .cast::<ParseInterruptCallback>()
+                .cast::<ParseProgressCallback>()
                 .as_mut()
                 .unwrap();
             callback(&ParseState::from_raw(state))
@@ -797,14 +794,14 @@ impl Parser {
 
         let empty_options = ffi::TSParseOptions {
             payload: ptr::null_mut(),
-            interrupt_callback: None,
+            progress_callback: None,
         };
 
         let parse_options = if let Some(options) = options {
-            if let Some(cb) = options.interrupt_callback {
+            if let Some(cb) = options.progress_callback {
                 ffi::TSParseOptions {
                     payload: Box::into_raw(Box::new(cb)).cast::<c_void>(),
-                    interrupt_callback: Some(interrupt),
+                    progress_callback: Some(progress),
                 }
             } else {
                 empty_options
@@ -835,9 +832,9 @@ impl Parser {
                 parse_options,
             );
 
-            // Clean up the interrupt callback if it was set
+            // Clean up the progress callback if it was set
             if !parse_options.payload.is_null() {
-                let _ = Box::from_raw(parse_options.payload.cast::<ParseInterruptCallback>());
+                let _ = Box::from_raw(parse_options.payload.cast::<ParseProgressCallback>());
             }
 
             NonNull::new(c_new_tree).map(Tree)
@@ -897,7 +894,7 @@ impl Parser {
     /// * `old_tree` A previous syntax tree parsed from the same document. If the text of the
     ///   document has changed since `old_tree` was created, then you must edit `old_tree` to match
     ///   the new text using [`Tree::edit`].
-    /// * `options` Options for parsing the text. This can be used to set an interrupt callback.
+    /// * `options` Options for parsing the text. This can be used to set a progress callback.
     pub fn parse_utf16_le_with_options<T: AsRef<[u16]>, F: FnMut(usize, Point) -> T>(
         &mut self,
         callback: &mut F,
@@ -906,10 +903,10 @@ impl Parser {
     ) -> Option<Tree> {
         type Payload<'a, F, T> = (&'a mut F, Option<T>);
 
-        unsafe extern "C" fn interrupt(state: *mut ffi::TSParseState) -> bool {
+        unsafe extern "C" fn progress(state: *mut ffi::TSParseState) -> bool {
             let callback = (*state)
                 .payload
-                .cast::<ParseInterruptCallback>()
+                .cast::<ParseProgressCallback>()
                 .as_mut()
                 .unwrap();
             callback(&ParseState::from_raw(state))
@@ -937,14 +934,14 @@ impl Parser {
 
         let empty_options = ffi::TSParseOptions {
             payload: ptr::null_mut(),
-            interrupt_callback: None,
+            progress_callback: None,
         };
 
         let parse_options = if let Some(options) = options {
-            if let Some(cb) = options.interrupt_callback {
+            if let Some(cb) = options.progress_callback {
                 ffi::TSParseOptions {
                     payload: Box::into_raw(Box::new(cb)).cast::<c_void>(),
-                    interrupt_callback: Some(interrupt),
+                    progress_callback: Some(progress),
                 }
             } else {
                 empty_options
@@ -975,9 +972,9 @@ impl Parser {
                 parse_options,
             );
 
-            // Clean up the interrupt callback if it was set
+            // Clean up the progress callback if it was set
             if !parse_options.payload.is_null() {
-                let _ = Box::from_raw(parse_options.payload.cast::<ParseInterruptCallback>());
+                let _ = Box::from_raw(parse_options.payload.cast::<ParseProgressCallback>());
             }
 
             NonNull::new(c_new_tree).map(Tree)
@@ -1015,7 +1012,7 @@ impl Parser {
     /// * `old_tree` A previous syntax tree parsed from the same document. If the text of the
     ///   document has changed since `old_tree` was created, then you must edit `old_tree` to match
     ///   the new text using [`Tree::edit`].
-    /// * `options` Options for parsing the text. This can be used to set an interrupt callback.
+    /// * `options` Options for parsing the text. This can be used to set a progress callback.
     pub fn parse_utf16_be_with_options<T: AsRef<[u16]>, F: FnMut(usize, Point) -> T>(
         &mut self,
         callback: &mut F,
@@ -1024,11 +1021,11 @@ impl Parser {
     ) -> Option<Tree> {
         type Payload<'a, F, T> = (&'a mut F, Option<T>);
 
-        // This C function is passed to Tree-sitter as the interrupt callback.
-        unsafe extern "C" fn interrupt(state: *mut ffi::TSParseState) -> bool {
+        // This C function is passed to Tree-sitter as the progress callback.
+        unsafe extern "C" fn progress(state: *mut ffi::TSParseState) -> bool {
             let callback = (*state)
                 .payload
-                .cast::<ParseInterruptCallback>()
+                .cast::<ParseProgressCallback>()
                 .as_mut()
                 .unwrap();
             callback(&ParseState::from_raw(state))
@@ -1056,14 +1053,14 @@ impl Parser {
 
         let empty_options = ffi::TSParseOptions {
             payload: ptr::null_mut(),
-            interrupt_callback: None,
+            progress_callback: None,
         };
 
         let parse_options = if let Some(options) = options {
-            if let Some(cb) = options.interrupt_callback {
+            if let Some(cb) = options.progress_callback {
                 ffi::TSParseOptions {
                     payload: Box::into_raw(Box::new(cb)).cast::<c_void>(),
-                    interrupt_callback: Some(interrupt),
+                    progress_callback: Some(progress),
                 }
             } else {
                 empty_options
@@ -1094,9 +1091,9 @@ impl Parser {
                 parse_options,
             );
 
-            // Clean up the interrupt callback if it was set
+            // Clean up the progress callback if it was set
             if !parse_options.payload.is_null() {
-                let _ = Box::from_raw(parse_options.payload.cast::<ParseInterruptCallback>());
+                let _ = Box::from_raw(parse_options.payload.cast::<ParseProgressCallback>());
             }
 
             NonNull::new(c_new_tree).map(Tree)
@@ -2879,19 +2876,19 @@ impl QueryCursor {
         text_provider: T,
         options: QueryCursorOptions,
     ) -> QueryMatches<'query, 'tree, T, I> {
-        unsafe extern "C" fn interrupt(state: *mut ffi::TSQueryCursorState) -> bool {
+        unsafe extern "C" fn progress(state: *mut ffi::TSQueryCursorState) -> bool {
             let callback = (*state)
                 .payload
-                .cast::<QueryInterruptCallback>()
+                .cast::<QueryProgressCallback>()
                 .as_mut()
                 .unwrap();
             (callback)(&QueryCursorState::from_raw(state))
         }
 
-        let query_options = options.interrupt_callback.map(|cb| {
+        let query_options = options.progress_callback.map(|cb| {
             QueryCursorOptionsDrop(Box::into_raw(Box::new(ffi::TSQueryCursorOptions {
                 payload: Box::into_raw(Box::new(cb)).cast::<c_void>(),
-                interrupt_callback: Some(interrupt),
+                progress_callback: Some(progress),
             })))
         });
 
@@ -2961,19 +2958,19 @@ impl QueryCursor {
         text_provider: T,
         options: QueryCursorOptions,
     ) -> QueryCaptures<'query, 'tree, T, I> {
-        unsafe extern "C" fn interrupt(state: *mut ffi::TSQueryCursorState) -> bool {
+        unsafe extern "C" fn progress(state: *mut ffi::TSQueryCursorState) -> bool {
             let callback = (*state)
                 .payload
-                .cast::<QueryInterruptCallback>()
+                .cast::<QueryProgressCallback>()
                 .as_mut()
                 .unwrap();
             (callback)(&QueryCursorState::from_raw(state))
         }
 
-        let query_options = options.interrupt_callback.map(|cb| {
+        let query_options = options.progress_callback.map(|cb| {
             QueryCursorOptionsDrop(Box::into_raw(Box::new(ffi::TSQueryCursorOptions {
                 payload: Box::into_raw(Box::new(cb)).cast::<c_void>(),
-                interrupt_callback: Some(interrupt),
+                progress_callback: Some(progress),
             })))
         });
 

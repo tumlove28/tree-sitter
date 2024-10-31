@@ -266,7 +266,7 @@ pub fn parse_file_at_path(parser: &mut Parser, opts: &ParseFileOptions) -> Resul
         false
     };
 
-    let parse_opts = ParseOptions::new().interrupt_callback(interrupt_callback);
+    let parse_opts = ParseOptions::new().progress_callback(interrupt_callback);
 
     let tree = match encoding {
         Some(encoding) if encoding == ffi::TSInputEncodingUTF16LE => {

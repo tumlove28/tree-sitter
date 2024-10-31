@@ -1569,14 +1569,14 @@ static bool ts_parser__advance(
     if (++self->operation_count == OP_COUNT_PER_PARSER_TIMEOUT_CHECK) {
       self->operation_count = 0;
     }
-    if (self->parse_options.interrupt_callback) {
+    if (self->parse_options.progress_callback) {
       self->parse_state.current_byte_offset = position;
     }
     if (self->operation_count == 0) {
       if (
         (self->cancellation_flag && atomic_load(self->cancellation_flag)) ||
         (!clock_is_null(self->end_clock) && clock_is_gt(clock_now(), self->end_clock)) ||
-        (self->parse_options.interrupt_callback && self->parse_options.interrupt_callback(&self->parse_state))
+        (self->parse_options.progress_callback && self->parse_options.progress_callback(&self->parse_state))
       ) {
         if (lookahead.ptr) {
           ts_subtree_release(&self->tree_pool, lookahead);

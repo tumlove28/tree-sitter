@@ -82,7 +82,7 @@ pub struct TSParseState {
 #[derive(Debug, Copy, Clone)]
 pub struct TSParseOptions {
     pub payload: *mut ::core::ffi::c_void,
-    pub interrupt_callback:
+    pub progress_callback:
         ::core::option::Option<unsafe extern "C" fn(state: *mut TSParseState) -> bool>,
 }
 pub const TSLogTypeParse: TSLogType = 0;
@@ -172,7 +172,7 @@ pub struct TSQueryCursorState {
 #[derive(Debug, Copy, Clone)]
 pub struct TSQueryCursorOptions {
     pub payload: *mut ::core::ffi::c_void,
-    pub interrupt_callback:
+    pub progress_callback:
         ::core::option::Option<unsafe extern "C" fn(state: *mut TSQueryCursorState) -> bool>,
 }
 extern "C" {

@@ -3501,7 +3501,7 @@ static inline bool ts_query_cursor__advance(
       self->operation_count = 0;
     }
 
-    if (self->query_options && self->query_options->interrupt_callback) {
+    if (self->query_options && self->query_options->progress_callback) {
       self->query_state.current_byte_offset = ts_node_start_byte(ts_tree_cursor_current_node(&self->cursor));
     }
     if (
@@ -3511,7 +3511,7 @@ static inline bool ts_query_cursor__advance(
         self->operation_count == 0 &&
         (
           (!clock_is_null(self->end_clock) && clock_is_gt(clock_now(), self->end_clock)) ||
-          (self->query_options && self->query_options->interrupt_callback && self->query_options->interrupt_callback(&self->query_state))
+          (self->query_options && self->query_options->progress_callback && self->query_options->progress_callback(&self->query_state))
         )
       )
     ) {
